@@ -1,22 +1,14 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { GeneratedQuest } from '@/src/services/ai';
 import { useTheme } from '@/src/context/ThemeContext';
 import { Trophy, Zap, ChevronRight } from 'lucide-react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  interpolate 
-} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 interface QuestCardProps {
   quest: GeneratedQuest;
   onPress: () => void;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const getDifficultyColor = (difficulty: string) => {
   switch (difficulty) {
@@ -29,64 +21,64 @@ const getDifficultyColor = (difficulty: string) => {
 
 export default function QuestCard({ quest, onPress }: QuestCardProps) {
   const { isDark } = useTheme();
-  const pressed = useSharedValue(0);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
   const s = isDark ? stylesDark : stylesLight;
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { scale: withSpring(interpolate(pressed.value, [0, 1], [1, 0.96]), { damping: 10, stiffness: 100 }) }
-      ] as any,
-    };
-  });
-
   const handlePressIn = () => {
-    pressed.value = 1;
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handlePressOut = () => {
-    pressed.value = 0;
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
-    <AnimatedPressable 
-      style={[s.card, animatedStyle]} 
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      onPress={onPress} 
-    >
-      <View style={s.header}>
-        <View style={[s.badge, { backgroundColor: getDifficultyColor(quest.difficulty) + '15' }]}>
-          <Text style={[s.badgeText, { color: getDifficultyColor(quest.difficulty) }]}>
-            {quest.difficulty.toUpperCase()}
-          </Text>
-        </View>
-        <View style={s.rewardContainer}>
-          <View style={s.rewardItem}>
-            <Trophy size={16} color="#FFD700" />
-            <Text style={s.rewardText}>{quest.xp} XP</Text>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Pressable 
+        style={s.card} 
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress} 
+      >
+        <View style={s.header}>
+          <View style={[s.badge, { backgroundColor: getDifficultyColor(quest.difficulty) + '15' }]}>
+            <Text style={[s.badgeText, { color: getDifficultyColor(quest.difficulty) }]}>
+              {quest.difficulty.toUpperCase()}
+            </Text>
           </View>
-          <View style={s.rewardItem}>
-            <Zap size={16} color="#FF7F24" fill="#FF7F24" />
-            <Text style={s.rewardText}>{quest.coins}</Text>
+          <View style={s.rewardContainer}>
+            <View style={s.rewardItem}>
+              <Trophy size={16} color="#FFD700" />
+              <Text style={s.rewardText}>{quest.xp} XP</Text>
+            </View>
+            <View style={s.rewardItem}>
+              <Zap size={16} color="#FF7F24" fill="#FF7F24" />
+              <Text style={s.rewardText}>{quest.coins}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <Text style={s.title}>{quest.title}</Text>
-      <Text style={s.description} numberOfLines={2}>{quest.description}</Text>
+        <Text style={s.title}>{quest.title}</Text>
+        <Text style={s.description} numberOfLines={2}>{quest.description}</Text>
 
-      <View style={s.footer}>
-        <View style={s.categoryContainer}>
-          <Text style={s.categoryText}>#{quest.category}</Text>
+        <View style={s.footer}>
+          <View style={s.categoryContainer}>
+            <Text style={s.categoryText}>#{quest.category}</Text>
+          </View>
+          <View style={s.actionBtn}>
+             <Text style={s.actionText}>LOS GEHT'S</Text>
+             <ChevronRight size={18} color="#FF7F24" strokeWidth={3} />
+          </View>
         </View>
-        <View style={s.actionBtn}>
-           <Text style={s.actionText}>LOS GEHT'S</Text>
-           <ChevronRight size={18} color="#FF7F24" strokeWidth={3} />
-        </View>
-      </View>
-    </AnimatedPressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 

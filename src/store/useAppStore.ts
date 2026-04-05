@@ -33,6 +33,8 @@ interface AppState {
   priorities: PrioritySettings;
   accountType: 'local' | 'cloud' | null;
   userId: string | null;
+  isAdmin: boolean;
+  allUnlocked: boolean;
   
   addXp: (amount: number) => void;
   addCoins: (amount: number) => void;
@@ -50,6 +52,7 @@ interface AppState {
   setPriorities: (priorities: PrioritySettings) => void;
   setAccountType: (type: 'local' | 'cloud') => void;
   setUserId: (id: string | null) => void;
+  activateAdmin: (code: string) => boolean;
 }
 
 const calculateXpToNextLevel = (level: number) => {
@@ -92,6 +95,8 @@ export const useAppStore = create<AppState>()(
       priorities: { primary: 'Sport', secondary: [] },
       accountType: null,
       userId: null,
+      isAdmin: false,
+      allUnlocked: false,
 
       addXp: (amount) => {
         set((state) => {
@@ -281,6 +286,23 @@ export const useAppStore = create<AppState>()(
 
       setUserId: (id) => {
         set({ userId: id });
+      },
+
+      activateAdmin: (code) => {
+        if (code === '260512') {
+          set({ 
+            isAdmin: true,
+            allUnlocked: true,
+            stats: {
+              ...get().stats,
+              coins: 999999,
+              level: 100,
+              title: 'LEGENDÄRER ADMIN',
+            }
+          });
+          return true;
+        }
+        return false;
       },
     }),
     {

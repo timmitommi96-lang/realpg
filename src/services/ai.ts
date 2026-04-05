@@ -9,18 +9,10 @@ export interface GeneratedQuest {
   coins: number;
 }
 
-// DeepSeek for text-based tasks
-const DEEPSEEK_API_KEY = "sk-0f5ee2214288410f8d82e9c2ddf77591";
-const DEEPSEEK_API_URL = "https://api.deepseek.com";
-
-// Google Gemini for image validation
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AIzaSyD-0O7zeLQTRuZIPQKUF8VdB4p761RKSjA";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 export const aiService = {
-  /**
-   * Generates daily quests using DeepSeek
-   */
   async generateDailyQuests(userProfile: any): Promise<GeneratedQuest[]> {
     const prompt = `
 Du bist der Game-Master von "RealPG", der besten Self-Improvement App der Welt. 
@@ -47,26 +39,9 @@ Antworte NUR im JSON-Format als Array:
 `.trim();
 
     try {
-      const response = await fetch(`${DEEPSEEK_API_URL}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: 'Du bist ein hilfreicher Assistent.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.8,
-          max_tokens: 2000,
-        }),
-      });
-
-      if (!response.ok) return [];
-      const data = await response.json();
-      const text = data.choices?.[0]?.message?.content || '';
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
       const jsonStr = text.match(/\[[\s\S]*\]/)?.[0] || text;
       return JSON.parse(jsonStr);
     } catch (error) {
@@ -75,9 +50,6 @@ Antworte NUR im JSON-Format als Array:
     }
   },
 
-  /**
-   * Validates quest proof using Google Gemini Vision
-   */
   async validateProof(base64Image: string, questDescription: string): Promise<{ isValid: boolean; feedback: string }> {
     if (!base64Image) {
       return { isValid: false, feedback: "Wo ist das Foto? 😉" };
@@ -99,70 +71,50 @@ Antworte NUR im JSON-Format:
 `.trim();
 
     try {
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Image,
-            mimeType: "image/jpeg"
-          }
-        }
-      ]);
-      
-      const response = await result.response;
-      const text = response.text();
-      const jsonStr = text.match(/\{[\s\S]*\}/)?.[0] || text;
+      const imagePart = {
+        inlineData: {
+          data: base64Image,
+          mimeType: "image/jpeg",
+        },
+      };
+
+      const result = await model.generateContent([prompt, imagePart]);
+      const text = result.response.text();
+      const jsonStr = text.match(/\{[\s\S]*\}/)?.[0] || '{"isValid": true, "feedback": "Quest erledigt! 🚀"}';
       return JSON.parse(jsonStr);
     } catch (error) {
       console.error('Failed to validate proof:', error);
-      return { isValid: true, feedback: "Konnte das Bild nicht genau prüfen, aber du siehst aus wie ein Gewinner! Quest erledigt! 🚀" };
+      return { isValid: true, feedback: "Quest erledigt! 🚀 Sehr gut gemacht!" };
     }
   },
 
-  /**
-   * Generates custom quest using DeepSeek
-   */
-  async generateCustomQuest(userGoal: string): Promise<GeneratedQuest | null> {
+  async generateCustomQuest(goal: string): Promise<GeneratedQuest | null> {
     const prompt = `
-Du bist der Game-Master von "RealPG". Der User möchte eine maßgeschneiderte Quest zu folgendem Ziel:
-"${userGoal}"
+Du bist der Game-Master von "RealPG". Der User möchte eine eigene Quest erstellen.
 
-Erstelle eine kreative, motivierende Quest, die dieses Ziel unterstützt.
+User-Wunsch: "${goal}"
+
+Erstelle eine passende Quest mit:
+- title: Kurzer, knackiger Titel
+- description: Motivierende Beschreibung (2-3 Sätze)
+- difficulty: Easy/Medium/Hard (basierend auf dem Wunsch)
+- category: Sport/Lernen/Haushalt/Social/Sonstiges
+- xp: 10-50 (basierend auf Schwierigkeit)
+- coins: 3-15 (basierend auf Schwierigkeit)
+
 Antworte NUR im JSON-Format:
-{"title": "...", "description": "...", "difficulty": "Easy/Medium/Hard", "category": "Sport/Lernen/Haushalt/Social/Sonstiges", "xp": 0, "coins": 0}
-
-XP und Münzen basierend auf Schwierigkeit:
-- Easy: 15 XP, 5 Münzen
-- Medium: 30 XP, 10 Münzen
-- Hard: 50 XP, 20 Münzen
+{"title": "...", "description": "...", "difficulty": "Easy/Medium/Hard", "category": "...", "xp": 0, "coins": 0}
 `.trim();
 
     try {
-      const response = await fetch(`${DEEPSEEK_API_URL}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: 'Du bist ein hilfreicher Assistent.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.8,
-          max_tokens: 500,
-        }),
-      });
-
-      if (!response.ok) return null;
-      const data = await response.json();
-      const text = data.choices?.[0]?.message?.content || '';
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
       const jsonStr = text.match(/\{[\s\S]*\}/)?.[0] || text;
       return JSON.parse(jsonStr);
     } catch (error) {
       console.error('Failed to generate custom quest:', error);
       return null;
     }
-  }
+  },
 };

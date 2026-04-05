@@ -7,6 +7,8 @@ import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useAppStore } from '@/src/store/useAppStore';
 
+const API_URL = 'https://realpg.vercel.app';
+
 export default function LoginScreen() {
   const router = useRouter();
   const { isDark } = useTheme();
@@ -26,7 +28,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch('https://realpg.pages.dev/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -34,15 +36,15 @@ export default function LoginScreen() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (data.success) {
         setUserId(data.userId);
         setAccountType('cloud');
         router.replace('/(onboarding)/step/1');
       } else {
         Alert.alert('Anmeldung fehlgeschlagen', data.error || 'Unbekannter Fehler');
       }
-    } catch (error) {
-      Alert.alert('Fehler', 'Verbindung fehlgeschlagen. Bitte später erneut versuchen.');
+    } catch (err: any) {
+      Alert.alert('Fehler', err.message || 'Verbindung fehlgeschlagen');
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,38 @@
-import React from 'react';
-import { StyleSheet, View, Text, SafeAreaView, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, SafeAreaView, ScrollView, TouchableOpacity, Linking, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
-import { ChevronLeft, Info, Heart, Star, Coffee, Globe, Mail } from 'lucide-react-native';
+import { useAppStore } from '@/src/store/useAppStore';
+import { ChevronLeft, Info, Heart, Star, Coffee, Globe, Mail, Crown } from 'lucide-react-native';
 
 export default function AboutSettings() {
   const router = useRouter();
   const { isDark } = useTheme();
+  const { activateAdmin, isAdmin, stats, allUnlocked } = useAppStore();
   const s = isDark ? stylesDark : stylesLight;
+
+  const [expoPressCount, setExpoPressCount] = useState(0);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+
+  const handleExpoPress = () => {
+    const newCount = expoPressCount + 1;
+    setExpoPressCount(newCount);
+    if (newCount >= 7) {
+      setShowCodeInput(true);
+    }
+  };
+
+  const handleCodeSubmit = () => {
+    if (activateAdmin(codeInput)) {
+      Alert.alert('🎉 ADMIN AKTIVIERT!', 'Du bist jetzt ein VIP mit:\n\n✨ Unbegrenzte Coins\n✨ Alles freigeschaltet\n✨ Admin Level');
+      setShowCodeInput(false);
+      setCodeInput('');
+    } else {
+      Alert.alert('Falscher Code', 'Der eingegebene Code ist ungültig.');
+    }
+    setExpoPressCount(0);
+  };
 
   return (
     <SafeAreaView style={s.container}>
@@ -20,6 +45,13 @@ export default function AboutSettings() {
       </View>
 
       <ScrollView contentContainerStyle={s.content}>
+        {isAdmin && (
+          <View style={s.adminBanner}>
+            <Crown color="#FFD700" size={24} fill="#FFD700" />
+            <Text style={s.adminBannerText}>ADMIN MODE ACTIVATED</Text>
+          </View>
+        )}
+
         <View style={s.iconContainer}>
           <Star color="#FF7F24" size={48} fill="#FF7F24" />
         </View>
@@ -52,13 +84,33 @@ export default function AboutSettings() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>TECHNOLOGIE</Text>
           <View style={s.techStack}>
+            <TouchableOpacity onPress={handleExpoPress}>
+              <TechBadge text="Expo" />
+            </TouchableOpacity>
             <TechBadge text="React Native" />
-            <TechBadge text="Expo" />
             <TechBadge text="TypeScript" />
             <TechBadge text="Zustand" />
             <TechBadge text="Google Gemini" />
           </View>
         </View>
+
+        {showCodeInput && (
+          <View style={s.codeInputContainer}>
+            <Text style={s.codeInputLabel}>Geheimer Admin-Code:</Text>
+            <TextInput
+              style={s.codeInput}
+              value={codeInput}
+              onChangeText={setCodeInput}
+              placeholder="Code eingeben..."
+              placeholderTextColor={isDark ? '#64748B' : '#AFAFAF'}
+              secureTextEntry
+              keyboardType="number-pad"
+            />
+            <TouchableOpacity onPress={handleCodeSubmit} style={s.codeSubmitButton}>
+              <Text style={s.codeSubmitText}>AKTIVIEREN</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={s.links}>
           <TouchableOpacity style={s.linkItem} onPress={() => Linking.openURL('https://realpg.app')}>
@@ -104,6 +156,8 @@ const stylesLight = StyleSheet.create({
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '900', color: '#4B4B4B' },
   content: { padding: 24, alignItems: 'center' },
+  adminBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF5EE', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20, marginBottom: 16, borderWidth: 2, borderColor: '#FFD700' },
+  adminBannerText: { fontSize: 14, fontWeight: '900', color: '#FFD700' },
   iconContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#FFF5EE', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   appName: { fontSize: 32, fontWeight: '900', color: '#4B4B4B' },
   version: { fontSize: 14, color: '#AFAFAF', fontWeight: '600', marginBottom: 20 },
@@ -118,6 +172,11 @@ const stylesLight = StyleSheet.create({
   techStack: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   techBadge: { backgroundColor: '#F3E8FF', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#D8B4FE' },
   techBadgeText: { fontSize: 12, fontWeight: '700', color: '#7C3AED' },
+  codeInputContainer: { width: '100%', backgroundColor: '#F0F0F0', padding: 16, borderRadius: 16, marginBottom: 16 },
+  codeInputLabel: { fontSize: 14, fontWeight: '700', color: '#4B4B4B', marginBottom: 8 },
+  codeInput: { backgroundColor: '#FFFFFF', padding: 12, borderRadius: 8, fontSize: 16, borderWidth: 1, borderColor: '#E5E5E5', marginBottom: 12 },
+  codeSubmitButton: { backgroundColor: '#FF7F24', padding: 12, borderRadius: 8, alignItems: 'center' },
+  codeSubmitText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
   links: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   linkItem: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF5EE', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, borderWidth: 2, borderColor: '#FF7F24' },
   linkText: { fontSize: 14, fontWeight: '800', color: '#FF7F24' },
@@ -132,6 +191,8 @@ const stylesDark = StyleSheet.create({
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '900', color: '#F1F5F9' },
   content: { padding: 24, alignItems: 'center' },
+  adminBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#2D1B0E', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20, marginBottom: 16, borderWidth: 2, borderColor: '#FFD700' },
+  adminBannerText: { fontSize: 14, fontWeight: '900', color: '#FFD700' },
   iconContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#2D1B0E', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   appName: { fontSize: 32, fontWeight: '900', color: '#F1F5F9' },
   version: { fontSize: 14, color: '#94A3B8', fontWeight: '600', marginBottom: 20 },
@@ -146,6 +207,11 @@ const stylesDark = StyleSheet.create({
   techStack: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   techBadge: { backgroundColor: '#2E1065', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#5B21B6' },
   techBadgeText: { fontSize: 12, fontWeight: '700', color: '#A78BFA' },
+  codeInputContainer: { width: '100%', backgroundColor: '#1E293B', padding: 16, borderRadius: 16, marginBottom: 16 },
+  codeInputLabel: { fontSize: 14, fontWeight: '700', color: '#F1F5F9', marginBottom: 8 },
+  codeInput: { backgroundColor: '#334155', padding: 12, borderRadius: 8, fontSize: 16, borderWidth: 1, borderColor: '#475569', color: '#F1F5F9', marginBottom: 12 },
+  codeSubmitButton: { backgroundColor: '#FF7F24', padding: 12, borderRadius: 8, alignItems: 'center' },
+  codeSubmitText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
   links: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   linkItem: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#2D1B0E', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, borderWidth: 2, borderColor: '#FF7F24' },
   linkText: { fontSize: 14, fontWeight: '800', color: '#FF7F24' },

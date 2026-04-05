@@ -1,11 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text, ActivityIndicator, Pressable, View } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  interpolate
-} from 'react-native-reanimated';
+import React, { useRef } from 'react';
+import { StyleSheet, Text, ActivityIndicator, Pressable, View, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -18,8 +12,6 @@ interface CustomButtonProps {
   colors?: [string, string];
 }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 export default function CustomButton({ 
   title, 
   onPress, 
@@ -28,50 +20,53 @@ export default function CustomButton({
   style,
   colors = ['#FF7F24', '#FF5500']
 }: CustomButtonProps) {
-  const pressed = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = withSpring(interpolate(pressed.value, [0, 1], [1, 0.95]), { damping: 10, stiffness: 200 });
-    return {
-      transform: [{ scale }],
-    };
-  });
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    pressed.value = 1;
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handlePressOut = () => {
-    pressed.value = 0;
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
-    <AnimatedPressable
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      onPress={onPress}
-      disabled={disabled || loading}
+    <Animated.View 
       style={[
         styles.buttonWrapper,
         style,
-        animatedStyle
+        { transform: [{ scale: scaleAnim }] }
       ]}
     >
-      <View style={[styles.shadow, (disabled || loading) && styles.disabledShadow]} />
-      <LinearGradient
-        colors={disabled || loading ? ['#E5E5E5', '#D4D4D4'] : colors}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        disabled={disabled || loading}
+        style={styles.pressable}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.text}>{title.toUpperCase()}</Text>
-        )}
-      </LinearGradient>
-    </AnimatedPressable>
+        <View style={[styles.shadow, (disabled || loading) && styles.disabledShadow]} />
+        <LinearGradient
+          colors={disabled || loading ? ['#E5E5E5', '#D4D4D4'] : colors}
+          style={styles.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.text}>{title.toUpperCase()}</Text>
+          )}
+        </LinearGradient>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -80,6 +75,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 64,
     marginBottom: 8,
+  },
+  pressable: {
+    flex: 1,
   },
   shadow: {
     position: 'absolute',

@@ -1,13 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withRepeat, 
-  withSequence, 
-  withTiming,
-  Easing
-} from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 
 interface FoxMascotProps {
   message: string;
@@ -15,37 +7,48 @@ interface FoxMascotProps {
 }
 
 export default function FoxMascot({ message, expression = 'happy' }: FoxMascotProps) {
-  const floatValue = useSharedValue(0);
-  const scaleValue = useSharedValue(1);
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    floatValue.value = withRepeat(
-      withSequence(
-        withTiming(-10, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1,
-      true
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -10,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
     );
 
-    scaleValue.value = withRepeat(
-      withSequence(
-        withTiming(1.02, { duration: 1500 }),
-        withTiming(1, { duration: 1500 })
-      ),
-      -1,
-      true
+    const scaleAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.02,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
     );
-  }, []);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { translateY: floatValue.value },
-        { scale: scaleValue.value }
-      ],
+    floatAnimation.start();
+    scaleAnimation.start();
+
+    return () => {
+      floatAnimation.stop();
+      scaleAnimation.stop();
     };
-  });
+  }, []);
 
   const getExpressionEmoji = () => {
     switch (expression) {
@@ -58,7 +61,17 @@ export default function FoxMascot({ message, expression = 'happy' }: FoxMascotPr
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.mascotContainer, animatedStyle]}>
+      <Animated.View 
+        style={[
+          styles.mascotContainer, 
+          { 
+            transform: [
+              { translateY: floatAnim },
+              { scale: scaleAnim }
+            ] 
+          }
+        ]}
+      >
         <View style={styles.foxHead}>
            <Text style={styles.emoji}>{getExpressionEmoji()}</Text>
         </View>
