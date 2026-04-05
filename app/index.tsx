@@ -50,6 +50,7 @@ export default function Index() {
   }
 
   return <Redirect href="/welcome" />;
+}
 
 const styles = StyleSheet.create({
   loadingContainer: {

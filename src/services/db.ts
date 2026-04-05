@@ -1,4 +1,18 @@
-import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
+
+let db: any = null;
+
+const getDb = async () => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
+  
+  if (!db) {
+    const SQLite = await import('expo-sqlite');
+    db = await SQLite.openDatabaseAsync(DB_NAME);
+  }
+  return db;
+};
 
 const DB_NAME = 'realpg.db';
 
@@ -24,18 +38,44 @@ export interface UserProfile {
   secondary_categories: string;
 }
 
+const defaultProfile: UserProfile = {
+  nickname: '',
+  age: '',
+  hobbies: '',
+  motivation: '',
+  quest_level: '',
+  daily_time: '',
+  notifications: true,
+  onboarding_completed: false,
+  sleep_quality: '',
+  diet_type: '',
+  primary_goal: '',
+  sport_level: 'beginner',
+  learning_level: 'beginner',
+  household_level: 'beginner',
+  social_level: 'beginner',
+  wellbeing_level: 'beginner',
+  primary_category: 'Sport',
+  secondary_categories: ''
+};
+
 export const initDb = async () => {
-  const db = await SQLite.openDatabaseAsync(DB_NAME);
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && !localStorage.getItem('realpg_profile')) {
+      localStorage.setItem('realpg_profile', JSON.stringify(defaultProfile));
+    }
+    return null;
+  }
   
-  // Drop and recreate to ensure clean schema (simple fix for migration issues)
+  const database = await getDb();
+  
   try {
-    await db.execAsync('DROP TABLE IF EXISTS user_profile');
+    await database.execAsync('DROP TABLE IF EXISTS user_profile');
   } catch (e) {
     // Table doesn't exist, continue
   }
   
-  // Create fresh table with all columns
-  await db.execAsync(`
+  await database.execAsync(`
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS user_profile (
       id INTEGER PRIMARY KEY NOT NULL,
@@ -60,32 +100,57 @@ export const initDb = async () => {
     );
   `);
   
-  return db;
+  return database;
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile>) => {
-  const db = await SQLite.openDatabaseAsync(DB_NAME);
-  const existing = await db.getFirstAsync<UserProfile>('SELECT * FROM user_profile LIMIT 1');
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined') return;
+    
+    const current = await getUserProfile();
+    const updated = { ...current, ...profile };
+    localStorage.setItem('realpg_profile', JSON.stringify(updated));
+    return;
+  }
+  
+  const database = await getDb();
+  const existing = await database.getFirstAsync<UserProfile>('SELECT * FROM user_profile LIMIT 1');
 
   if (existing) {
     const keys = Object.keys(profile);
     const setClause = keys.map(k => `${k} = ?`).join(', ');
     const values = keys.map(k => profile[k as keyof UserProfile] ?? null);
-    await db.runAsync(`UPDATE user_profile SET ${setClause} WHERE id = ?`, [...values, existing.id] as any);
+    await database.runAsync(`UPDATE user_profile SET ${setClause} WHERE id = ?`, [...values, existing.id] as any);
   } else {
     const keys = Object.keys(profile);
     const placeholders = keys.map(() => '?').join(', ');
     const values = keys.map(k => profile[k as keyof UserProfile] ?? null);
-    await db.runAsync(`INSERT INTO user_profile (${keys.join(', ')}) VALUES (${placeholders})`, values as any);
+    await database.runAsync(`INSERT INTO user_profile (${keys.join(', ')}) VALUES (${placeholders})`, values as any);
   }
 };
 
-export const getUserProfile = async () => {
-  const db = await SQLite.openDatabaseAsync(DB_NAME);
-  return await db.getFirstAsync<UserProfile>('SELECT * FROM user_profile LIMIT 1');
+export const getUserProfile = async (): Promise<UserProfile | null> => {
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined') return null;
+    
+    const data = localStorage.getItem('realpg_profile');
+    if (data) {
+      return JSON.parse(data);
+    }
+    return null;
+  }
+  
+  const database = await getDb();
+  return await database.getFirstAsync<UserProfile>('SELECT * FROM user_profile LIMIT 1');
 };
 
 export const resetDatabase = async () => {
-  const db = await SQLite.openDatabaseAsync(DB_NAME);
-  await db.execAsync('DELETE FROM user_profile');
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('realpg_profile', JSON.stringify(defaultProfile));
+    return;
+  }
+  
+  const database = await getDb();
+  await database.execAsync('DELETE FROM user_profile');
 };
