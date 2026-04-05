@@ -1,4 +1,15 @@
 export const onRequestPost = async (request: Request) => {
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, { headers });
+  }
+
   const { email, password } = await request.json();
   
   if (!email || !password) {
@@ -7,7 +18,7 @@ export const onRequestPost = async (request: Request) => {
       error: "Email and password required" 
     }), {
       status: 400,
-      headers: { "Content-Type": "application/json" }
+      headers
     });
   }
   
@@ -17,7 +28,7 @@ export const onRequestPost = async (request: Request) => {
       error: "Password must be at least 6 characters" 
     }), {
       status: 400,
-      headers: { "Content-Type": "application/json" }
+      headers
     });
   }
   
@@ -28,6 +39,6 @@ export const onRequestPost = async (request: Request) => {
     userId,
     message: "Account created successfully" 
   }), {
-    headers: { "Content-Type": "application/json" }
+    headers
   });
 };
