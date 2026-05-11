@@ -1,9 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://stovmbgqzjsjohgkwbkh.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0b3ZtYmdxempzam9oZ2t3YmtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIzNjIsImV4cCI6MjA5MDk3ODM2Mn0.rCrD31CF2SzXMPod0S7fzCkrx1-pReMNLeTwy1eL0K4';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing Supabase env vars. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.'
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
 export interface AuthUser {
   id: string;
@@ -12,6 +23,11 @@ export interface AuthUser {
 }
 
 export const authService = {
+  async ensureProfile(nickname = 'Held'): Promise<boolean> {
+    const { error } = await supabase.rpc('ensure_profile', { p_nickname: nickname });
+    return !error;
+  },
+
   async register(email: string, password: string): Promise<{ userId: string; error: string | null }> {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -30,6 +46,7 @@ export const authService = {
         return { userId: '', error: 'Registrierung fehlgeschlagen' };
       }
 
+      await this.ensureProfile(email.split('@')[0] || 'Held');
       return { userId: data.user.id, error: null };
     } catch (err: any) {
       return { userId: '', error: err.message };
@@ -54,6 +71,7 @@ export const authService = {
         return { userId: '', error: 'Anmeldung fehlgeschlagen' };
       }
 
+      await this.ensureProfile(email.split('@')[0] || 'Held');
       return { userId: data.user.id, error: null };
     } catch (err: any) {
       return { userId: '', error: err.message };
@@ -62,17 +80,12 @@ export const authService = {
 
   async getUser(userId: string): Promise<AuthUser | null> {
     try {
-      const { data, error } = await supabase.auth.getUser(userId);
-
-      if (error || !data.user) {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user || data.user.id !== userId) {
         return null;
       }
 
-      return {
-        id: data.user.id,
-        email: data.user.email || '',
-        created_at: data.user.created_at || '',
-      };
+      return { id: data.user.id, email: data.user.email || '', created_at: data.user.created_at || '' };
     } catch {
       return null;
     }

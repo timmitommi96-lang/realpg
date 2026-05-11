@@ -1,9 +1,10 @@
 import CustomButton from '@/components/CustomButton';
-import FoxMascot from '@/components/FoxMascot';
+import FoxMascot, { FoxExpression } from '@/components/FoxMascot';
 import { getUserProfile, saveUserProfile } from '@/src/services/db';
+import { useTheme } from '@/src/context/ThemeContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
 const QUESTIONS = [
@@ -24,22 +25,15 @@ export default function OnboardingStep() {
   const stepIndex = parseInt(step || '1') - 1;
   const currentStep = QUESTIONS[stepIndex];
   const router = useRouter();
+  const { isDark } = useTheme();
 
   const [value, setValue] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (!currentStep) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF7F24" />
-      </View>
-    );
-  }
-
   useEffect(() => {
     async function loadValue() {
+      if (!currentStep) return;
       try {
-        if (!currentStep) return;
         const profile = await getUserProfile();
         if (profile) {
           const existingValue = (profile as any)[currentStep.id];
@@ -51,6 +45,36 @@ export default function OnboardingStep() {
     }
     loadValue();
   }, [stepIndex, currentStep]);
+
+  // Dynamische Fuchs-Begleitung für das Onboarding
+  const mascotState = useMemo(() => {
+    const expressions: FoxExpression[] = ['happy', 'thinking', 'excited', 'thinking', 'quest', 'thinking', 'sad', 'thinking', 'happy', 'excited'];
+    const messages = [
+      "Ein starker Name für einen starken Helden!",
+      "Nur eine Zahl, aber wichtig für dein Training!",
+      "Gute Wahl! Wir werden dich zum Experten machen.",
+      "Interessant! Das lässt sich super in Quests einbauen.",
+      "Bist du bereit für die Herausforderung?",
+      "Zeitmanagement ist der Schlüssel zum Erfolg!",
+      "Schlaf ist heilig für die Regeneration...",
+      "Du bist, was du isst! Packen wir's an.",
+      "Das ist der Spirit, den wir brauchen!",
+      "Fast geschafft! Soll ich dir ab und zu Feuer unterm Hintern machen?"
+    ];
+
+    return {
+      message: messages[stepIndex] || currentStep.question,
+      expression: expressions[stepIndex] || 'idle'
+    };
+  }, [stepIndex]);
+
+  if (!currentStep) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#FF7F24" />
+      </View>
+    );
+  }
 
   const handleNext = async () => {
     setLoading(true);
@@ -75,54 +99,56 @@ export default function OnboardingStep() {
     }
   };
 
-  if (!currentStep) return null;
+  const s = isDark ? stylesDark : stylesLight;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft color="#4B4B4B" size={28} />
+    <SafeAreaView style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backButton}>
+          <ChevronLeft color={isDark ? "#94A3B8" : "#4B4B4B"} size={28} />
         </TouchableOpacity>
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBar, { width: `${((stepIndex + 1) / QUESTIONS.length) * 100}%` }]} />
+        <View style={s.progressBarContainer}>
+          <View style={[s.progressBar, { width: `${((stepIndex + 1) / QUESTIONS.length) * 100}%` }]} />
         </View>
-        <Text style={styles.stepText}>{stepIndex + 1}/{QUESTIONS.length}</Text>
+        <Text style={s.stepText}>{stepIndex + 1}/{QUESTIONS.length}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={{ width: '100%' }}>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <View style={{ width: '100%', marginBottom: 10 }}>
             <FoxMascot 
-            message={currentStep.question} 
-            expression={stepIndex % 3 === 0 ? 'happy' : stepIndex % 3 === 1 ? 'thinking' : 'quest'} 
+              message={mascotState.message}
+              expression={mascotState.expression as any}
             />
         </View>
 
+        <Text style={s.questionSub}>{currentStep.question}</Text>
+
         {currentStep.type === 'text' ? (
           <TextInput
-            style={styles.input}
+            style={s.input}
             placeholder={currentStep.placeholder}
             value={value}
             onChangeText={setValue}
             keyboardType={currentStep.keyboardType as any || 'default'}
             autoFocus
-            placeholderTextColor="#D4D4D4"
+            placeholderTextColor={isDark ? "#64748B" : "#AFAFAF"}
           />
         ) : (
-          <View style={styles.choiceContainer}>
+          <View style={s.choiceContainer}>
             {currentStep.options?.map((option) => (
               <TouchableOpacity
                   key={option}
                   style={[
-                  styles.choiceButton,
-                  value === option && styles.choiceButtonSelected
+                  s.choiceButton,
+                  value === option && s.choiceButtonSelected
                   ]}
                   onPress={() => setValue(option)}
               >
                   <Text style={[
-                  styles.choiceText,
-                  value === option && styles.choiceTextSelected
+                  s.choiceText,
+                  value === option && s.choiceTextSelected
                   ]}>
-                  {option === 'Ja, schick mir Pushes!' ? 'JA, AUF JEDEN FALL!' : option.toUpperCase()}
+                  {option.toUpperCase()}
                   </Text>
               </TouchableOpacity>
             ))}
@@ -130,7 +156,7 @@ export default function OnboardingStep() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={s.footer}>
         <CustomButton 
           title="WEITER" 
           onPress={handleNext} 
@@ -142,19 +168,38 @@ export default function OnboardingStep() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesLight = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, paddingTop: 50 },
   backButton: { padding: 8 },
-  progressBarContainer: { flex: 1, height: 14, backgroundColor: '#F2F2F2', borderRadius: 7, marginHorizontal: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E5E5' },
-  progressBar: { height: '100%', backgroundColor: '#FF7F24', borderRadius: 7 },
+  progressBarContainer: { flex: 1, height: 10, backgroundColor: '#F2F2F2', borderRadius: 5, marginHorizontal: 12, overflow: 'hidden' },
+  progressBar: { height: '100%', backgroundColor: '#FF7F24', borderRadius: 5 },
   stepText: { fontSize: 13, fontWeight: '900', color: '#AFAFAF', width: 35 },
   content: { padding: 24, paddingBottom: 100 },
-  input: { width: '100%', backgroundColor: '#F9F9F9', borderWidth: 2, borderColor: '#F2F2F2', borderRadius: 18, padding: 20, fontSize: 19, color: '#4B4B4B', marginTop: 24, fontWeight: '700' },
-  choiceContainer: { width: '100%', marginTop: 24 },
-  choiceButton: { width: '100%', backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#F2F2F2', borderBottomWidth: 6, borderRadius: 20, padding: 20, marginBottom: 14 },
-  choiceButtonSelected: { backgroundColor: '#FDFDFD', borderColor: '#FF7F24', borderBottomColor: '#CC5500' },
-  choiceText: { fontSize: 17, fontWeight: '900', color: '#4B4B4B', textAlign: 'center', letterSpacing: 1 },
+  questionSub: { fontSize: 18, fontWeight: '900', color: '#4B4B4B', marginBottom: 20, textAlign: 'center' },
+  input: { width: '100%', backgroundColor: '#F9F9F9', borderWidth: 2, borderColor: '#F2F2F2', borderRadius: 18, padding: 20, fontSize: 19, color: '#4B4B4B', marginTop: 10, fontWeight: '700' },
+  choiceContainer: { width: '100%', marginTop: 10 },
+  choiceButton: { width: '100%', backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#F2F2F2', borderBottomWidth: 6, borderRadius: 20, padding: 18, marginBottom: 14 },
+  choiceButtonSelected: { backgroundColor: '#FFF5EE', borderColor: '#FF7F24', borderBottomColor: '#CC5500' },
+  choiceText: { fontSize: 16, fontWeight: '900', color: '#4B4B4B', textAlign: 'center', letterSpacing: 1 },
   choiceTextSelected: { color: '#FF7F24' },
-  footer: { padding: 24, backgroundColor: '#FFFFFF' },
+  footer: { padding: 24, backgroundColor: '#FFFFFF', borderTopWidth: 2, borderTopColor: '#F2F2F2' },
+});
+
+const stylesDark = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0F172A' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, paddingTop: 50 },
+  backButton: { padding: 8 },
+  progressBarContainer: { flex: 1, height: 10, backgroundColor: '#1E293B', borderRadius: 5, marginHorizontal: 12, overflow: 'hidden' },
+  progressBar: { height: '100%', backgroundColor: '#FF7F24', borderRadius: 5 },
+  stepText: { fontSize: 13, fontWeight: '900', color: '#64748B', width: 35 },
+  content: { padding: 24, paddingBottom: 100 },
+  questionSub: { fontSize: 18, fontWeight: '900', color: '#F1F5F9', marginBottom: 20, textAlign: 'center' },
+  input: { width: '100%', backgroundColor: '#1E293B', borderWidth: 2, borderColor: '#334155', borderRadius: 18, padding: 20, fontSize: 19, color: '#F1F5F9', marginTop: 10, fontWeight: '700' },
+  choiceContainer: { width: '100%', marginTop: 10 },
+  choiceButton: { width: '100%', backgroundColor: '#1E293B', borderWidth: 2, borderColor: '#334155', borderBottomWidth: 6, borderRadius: 20, padding: 18, marginBottom: 14 },
+  choiceButtonSelected: { backgroundColor: '#2D1B0E', borderColor: '#FF7F24', borderBottomColor: '#CC5500' },
+  choiceText: { fontSize: 16, fontWeight: '900', color: '#F1F5F9', textAlign: 'center', letterSpacing: 1 },
+  choiceTextSelected: { color: '#FF7F24' },
+  footer: { padding: 24, backgroundColor: '#0F172A', borderTopWidth: 2, borderTopColor: '#334155' },
 });

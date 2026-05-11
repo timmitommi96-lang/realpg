@@ -6,8 +6,7 @@ import { SafeAreaView, StyleSheet, View, Text, TextInput, TouchableOpacity, Keyb
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, UserPlus } from 'lucide-react-native';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useAppStore } from '@/src/store/useAppStore';
-
-const API_URL = 'https://realpg.vercel.app';
+import { authService } from '@/src/services/auth';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -39,15 +38,9 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await authService.register(email.trim(), password);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (!data.error && data.userId) {
         setUserId(data.userId);
         setAccountType('cloud');
         router.replace('/(onboarding)/welcome');

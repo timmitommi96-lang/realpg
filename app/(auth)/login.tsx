@@ -6,8 +6,7 @@ import { SafeAreaView, StyleSheet, View, Text, TextInput, TouchableOpacity, Keyb
 import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useAppStore } from '@/src/store/useAppStore';
-
-const API_URL = 'https://realpg.vercel.app';
+import { authService } from '@/src/services/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -28,15 +27,9 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await authService.login(email.trim(), password);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (!data.error && data.userId) {
         setUserId(data.userId);
         setAccountType('cloud');
         router.replace('/(onboarding)/step/1');
@@ -142,8 +135,8 @@ export default function LoginScreen() {
 const stylesLight = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   keyboardView: { flex: 1 },
-  header: { padding: 16, paddingTop: 8 },
-  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  header: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20 },
+  backButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
   content: { flex: 1, padding: 24 },
   title: { fontSize: 28, fontWeight: '900', color: '#4B4B4B', textAlign: 'center', marginTop: 10 },
   subtitle: { fontSize: 16, color: '#AFAFAF', textAlign: 'center', marginTop: 8, marginBottom: 30 },
@@ -168,8 +161,8 @@ const stylesLight = StyleSheet.create({
 const stylesDark = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
   keyboardView: { flex: 1 },
-  header: { padding: 16, paddingTop: 8 },
-  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  header: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20 },
+  backButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
   content: { flex: 1, padding: 24 },
   title: { fontSize: 28, fontWeight: '900', color: '#F1F5F9', textAlign: 'center', marginTop: 10 },
   subtitle: { fontSize: 16, color: '#94A3B8', textAlign: 'center', marginTop: 8, marginBottom: 30 },

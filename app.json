@@ -7,21 +7,44 @@
     "icon": "./assets/images/icon.png",
     "scheme": "realpg",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.whackrave.RealPG"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FF8C00",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.whackrave.RealPG",
-      "permissions": ["VIBRATE", "CAMERA"]
+      "permissions": [
+        "VIBRATE",
+        "CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "realpg"
+            },
+            {
+              "scheme": "https",
+              "host": "realpg.app",
+              "pathPrefix": "/i"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "output": "static",
@@ -46,11 +69,22 @@
         {
           "useSQLCipher": false
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": false
-    }
+    },
+    "assetBundlePatterns": [
+      "assets/images/*"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "356785fa-3cdb-48b5-9809-9162156873ff"
+      }
+    },
+    "owner": "whackrave"
   }
 }

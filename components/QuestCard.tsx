@@ -2,12 +2,13 @@ import React, { useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { GeneratedQuest } from '@/src/services/ai';
 import { useTheme } from '@/src/context/ThemeContext';
-import { Trophy, Zap, ChevronRight } from 'lucide-react-native';
+import { Trophy, Zap, ChevronRight, Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface QuestCardProps {
   quest: GeneratedQuest;
   onPress: () => void;
+  isAiQuest?: boolean;
 }
 
 const getDifficultyColor = (difficulty: string) => {
@@ -19,7 +20,7 @@ const getDifficultyColor = (difficulty: string) => {
   }
 };
 
-export default function QuestCard({ quest, onPress }: QuestCardProps) {
+export default function QuestCard({ quest, onPress, isAiQuest }: QuestCardProps) {
   const { isDark } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const s = isDark ? stylesDark : stylesLight;
@@ -42,16 +43,19 @@ export default function QuestCard({ quest, onPress }: QuestCardProps) {
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable 
-        style={s.card} 
+        style={[s.card, isAiQuest && s.cardAi]} 
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress} 
       >
         <View style={s.header}>
-          <View style={[s.badge, { backgroundColor: getDifficultyColor(quest.difficulty) + '15' }]}>
-            <Text style={[s.badgeText, { color: getDifficultyColor(quest.difficulty) }]}>
-              {quest.difficulty.toUpperCase()}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {isAiQuest && <Sparkles size={16} color="#9B59B6" />}
+            <View style={[s.badge, { backgroundColor: getDifficultyColor(quest.difficulty) + '15' }]}>
+              <Text style={[s.badgeText, { color: getDifficultyColor(quest.difficulty) }]}>
+                {quest.difficulty.toUpperCase()}
+              </Text>
+            </View>
           </View>
           <View style={s.rewardContainer}>
             <View style={s.rewardItem}>
@@ -69,12 +73,12 @@ export default function QuestCard({ quest, onPress }: QuestCardProps) {
         <Text style={s.description} numberOfLines={2}>{quest.description}</Text>
 
         <View style={s.footer}>
-          <View style={s.categoryContainer}>
-            <Text style={s.categoryText}>#{quest.category}</Text>
+          <View style={[s.categoryContainer, isAiQuest && s.categoryContainerAi]}>
+            <Text style={[s.categoryText, isAiQuest && s.categoryTextAi]}>#{quest.category}</Text>
           </View>
           <View style={s.actionBtn}>
-             <Text style={s.actionText}>LOS GEHT'S</Text>
-             <ChevronRight size={18} color="#FF7F24" strokeWidth={3} />
+             <Text style={[s.actionText, isAiQuest && s.actionTextAi]}>LOS GEHT&apos;S</Text>
+             <ChevronRight size={18} color={isAiQuest ? "#9B59B6" : "#FF7F24"} strokeWidth={3} />
           </View>
         </View>
       </Pressable>
@@ -91,6 +95,10 @@ const stylesLight = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E5E5E5',
     borderBottomWidth: 6,
+  },
+  cardAi: {
+    backgroundColor: '#F8F0FF',
+    borderColor: '#9B59B6',
   },
   header: {
     flexDirection: 'row',
@@ -148,10 +156,16 @@ const stylesLight = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
+  categoryContainerAi: {
+    backgroundColor: '#E8D5F0',
+  },
   categoryText: {
     color: '#AFAFAF',
     fontSize: 12,
     fontWeight: '800',
+  },
+  categoryTextAi: {
+    color: '#9B59B6',
   },
   actionBtn: {
     flexDirection: 'row',
@@ -162,6 +176,9 @@ const stylesLight = StyleSheet.create({
     color: '#FF7F24',
     fontSize: 14,
     fontWeight: '800',
+  },
+  actionTextAi: {
+    color: '#9B59B6',
   }
 });
 
@@ -174,6 +191,10 @@ const stylesDark = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#334155',
     borderBottomWidth: 6,
+  },
+  cardAi: {
+    backgroundColor: '#2E1065',
+    borderColor: '#A78BFA',
   },
   header: {
     flexDirection: 'row',
@@ -231,10 +252,16 @@ const stylesDark = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
+  categoryContainerAi: {
+    backgroundColor: '#4C1D95',
+  },
   categoryText: {
     color: '#94A3B8',
     fontSize: 12,
     fontWeight: '800',
+  },
+  categoryTextAi: {
+    color: '#A78BFA',
   },
   actionBtn: {
     flexDirection: 'row',
@@ -245,5 +272,8 @@ const stylesDark = StyleSheet.create({
     color: '#FF7F24',
     fontSize: 14,
     fontWeight: '800',
+  },
+  actionTextAi: {
+    color: '#A78BFA',
   }
 });

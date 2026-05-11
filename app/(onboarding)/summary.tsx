@@ -1,6 +1,7 @@
 import CustomButton from '@/components/CustomButton';
 import FoxMascot from '@/components/FoxMascot';
 import { getUserProfile, saveUserProfile, UserProfile } from '@/src/services/db';
+import { useAppStore } from '@/src/store/useAppStore';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
@@ -10,6 +11,7 @@ export default function Summary() {
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   const router = useRouter();
+  const { aiMode } = useAppStore();
 
   useEffect(() => {
     async function loadProfile() {
@@ -29,7 +31,11 @@ export default function Summary() {
     setLoading(true);
     try {
       await saveUserProfile({ onboarding_completed: true });
-      router.replace('/(tabs)');
+      if (aiMode === null) {
+        router.replace('/(onboarding)/ai-setup');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err) {
       console.error('Failed to save:', err);
       setLoading(false);

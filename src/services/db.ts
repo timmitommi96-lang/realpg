@@ -69,12 +69,7 @@ export const initDb = async () => {
   
   const database = await getDb();
   
-  try {
-    await database.execAsync('DROP TABLE IF EXISTS user_profile');
-  } catch (e) {
-    // Table doesn't exist, continue
-  }
-  
+  // Removed the DROP TABLE logic to make sure the local SQLite database persists between sessions.
   await database.execAsync(`
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS user_profile (
@@ -114,7 +109,7 @@ export const saveUserProfile = async (profile: Partial<UserProfile>) => {
   }
   
   const database = await getDb();
-  const existing = await database.getFirstAsync<UserProfile>('SELECT * FROM user_profile LIMIT 1');
+  const existing = (await database.getFirstAsync('SELECT * FROM user_profile LIMIT 1')) as UserProfile | null;
 
   if (existing) {
     const keys = Object.keys(profile);
@@ -141,7 +136,7 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
   }
   
   const database = await getDb();
-  return await database.getFirstAsync<UserProfile>('SELECT * FROM user_profile LIMIT 1');
+  return (await database.getFirstAsync('SELECT * FROM user_profile LIMIT 1')) as UserProfile | null;
 };
 
 export const resetDatabase = async () => {

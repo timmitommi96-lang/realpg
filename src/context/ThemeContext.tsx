@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useColorScheme as useSystemColorScheme } from 'react-native';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useAppStore } from '@/src/store/useAppStore';
 
 export interface ThemeColors {
@@ -12,6 +11,7 @@ export interface ThemeColors {
   success: string;
   border: string;
   inputBg: string;
+  tabBar: string;
 }
 
 const lightTheme: ThemeColors = {
@@ -24,6 +24,7 @@ const lightTheme: ThemeColors = {
   success: '#10B981',
   border: '#F2F2F2',
   inputBg: '#F9F9F9',
+  tabBar: '#FFFFFF',
 };
 
 const darkTheme: ThemeColors = {
@@ -36,29 +37,49 @@ const darkTheme: ThemeColors = {
   success: '#10B981',
   border: '#334155',
   inputBg: '#1E293B',
+  tabBar: '#0F172A',
+};
+
+const neonTheme: ThemeColors = {
+  background: '#0D0221',
+  card: '#261447',
+  text: '#FFFFFF',
+  textSecondary: '#FF00E4',
+  primary: '#FF00E4',
+  accent: '#00F0FF',
+  success: '#39FF14',
+  border: '#FF00E4',
+  inputBg: '#2D0054',
+  tabBar: '#0D0221',
 };
 
 interface ThemeContextType {
   colors: ThemeColors;
   isDark: boolean;
+  isNeon: boolean;
   toggleDarkMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   colors: lightTheme,
   isDark: false,
+  isNeon: false,
   toggleDarkMode: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const systemColorScheme = useSystemColorScheme();
-  const { darkMode, toggleDarkMode } = useAppStore();
+  const { darkMode, neonThemeEnabled, toggleDarkMode } = useAppStore();
   
-  const isDark = darkMode;
-  const colors = isDark ? darkTheme : lightTheme;
+  const isDark = darkMode || neonThemeEnabled;
+  const isNeon = neonThemeEnabled;
+
+  let colors = isDark ? darkTheme : lightTheme;
+  if (neonThemeEnabled) {
+    colors = neonTheme;
+  }
 
   return (
-    <ThemeContext.Provider value={{ colors, isDark, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ colors, isDark, isNeon, toggleDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );

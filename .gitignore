@@ -32,6 +32,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -46,3 +47,4 @@ app-example
 # IDE
 .idea/
 .vscode/settings.json
+nul
